@@ -10,27 +10,35 @@ import (
 	"github.com/go-oauth2/oauth2/v4/server"
 	"github.com/go-oauth2/oauth2/v4/store"
 	"github.com/labstack/echo/v4"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"service-auth/controllers/authControllers"
 	"service-auth/services"
+	"service-auth/utils"
 )
 
 func main(){
+	kid := os.Getenv("RSA_KEY_ID")
+	clientId := os.Getenv("CLIENT_ID")
+	clientSecret := os.Getenv("CLIENT_SECRET")
+	port := os.Getenv("PORT")
+	if port == ""{
+		port = "8888"
+	}
+
 	manager := manage.NewDefaultManager()
 	//token memeory store
 	manager.MustTokenStorage(store.NewMemoryTokenStore())
 
-	privKey := ReadKey()
+	privKey := utils.CreateKey(kid)
 
-	manager.MapAccessGenerate(generates.NewJWTAccessGenerate("", privKey, jwt.SigningMethodRS256))
+	manager.MapAccessGenerate(generates.NewJWTAccessGenerate(kid, privKey, jwt.SigningMethodRS256))
 	//client memory store
 	clientstore := store.NewClientStore()
-	clientstore.Set("Z2V0cHJpbnQtc2VydmljZS1hdXRo", &models.Client{
-		ID : "Z2V0cHJpbnQtc2VydmljZS1hdXRo",
-		Secret: "c2VjcmV0LWtleS1mb3ItZ2V0cHJpbnQtc2VydmljZS1hdXRo",
+	clientstore.Set(clientId, &models.Client{
+		ID : clientId,
+		Secret: clientSecret,
 		Domain: "http://localhost",
 	})
 	manager.MapClientStorage(clientstore)
@@ -49,10 +57,6 @@ func main(){
 
 	srv.SetPasswordAuthorizationHandler(services.PasswordAuthorizationHandler)
 
-	port := os.Getenv("PORT")
-	if port == ""{
-		port = "8888"
-	}
 	route := echo.New()
 
 	route.GET("/", func(c echo.Context) error{
@@ -63,13 +67,4 @@ func main(){
 	authControllers.NewAuthControllers(route, srv)
 
 	route.Logger.Fatal(route.Start(fmt.Sprintf(":%s", port)))
-}
-
-func ReadKey()[]byte{
-	privKey, err := ioutil.ReadFile("./key/private.pem")
-	if err != nil{
-		log.Println(err.Error())
-		return nil
-	}
-	return privKey
 }
