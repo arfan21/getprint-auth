@@ -1,33 +1,25 @@
 package services
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	_ "github.com/joho/godotenv/autoload"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func VerifyIdTokenLine(ctx context.Context, idToken string) (map[string]interface{}, error){
 	urlLine := "https://api.line.me/oauth2/v2.1/verify"
 	lineClientID := os.Getenv("LINE_CLIENT_ID")
-	data := map[string]interface{}{
-		"id_token" : idToken,
-		"client_id" : lineClientID,
-	}
+	reqBody := strings.NewReader(`id_token=`+idToken+`&client_id=`+lineClientID)
 
-	dataJson, err := json.Marshal(data)
-	if err != nil{
-		return nil, errors.New("internal server error")
-	}
-
-	payload := bytes.NewBuffer(dataJson)
 	client := new(http.Client)
-	req, err := http.NewRequestWithContext(ctx, "POST", urlLine, payload)
-
+	req, err := http.NewRequestWithContext(ctx, "POST", urlLine, reqBody)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	if err != nil {
 		return nil, errors.New("internal server error")
 	}
