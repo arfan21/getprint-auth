@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/labstack/echo/v4"
+	"log"
 	"net/http"
 	"os"
 	"service-auth/services"
+	"service-auth/utils"
 )
 
 func main() {
@@ -34,7 +36,13 @@ func main() {
 		fmt.Println(res)
 		return nil
 	})
-	route.Static("/oauth", "oauth")
+	route.Static("/well-knows", "oauth")
 
+	if err := utils.CreateKey("getprintIDToken", "token"); err != nil{
+		log.Println(err)
+	}
+	if err := utils.CreateKey("getprintIDRefreshToken", "refreshToken"); err != nil{
+		log.Println(err)
+	}
 	route.Logger.Fatal(route.Start(fmt.Sprintf(":%s", port)))
 }

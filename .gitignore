@@ -2,5 +2,6 @@
 .vscode
 /tmp
 /key
-/oauth
+/well-knows
+/certs
 .env

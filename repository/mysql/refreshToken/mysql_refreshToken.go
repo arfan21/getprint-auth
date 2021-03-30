@@ -5,7 +5,7 @@ import (
 	"service-auth/models"
 )
 
-type RefreshRepository interface {
+type RefreshTokenRepository interface {
 	Create(refreshToken *models.RefreshToken) error
 	GetByToken(token string) (error, *models.RefreshToken)
 	DeleteByUserID(id uint) error
@@ -15,7 +15,7 @@ type refreshTokenRepository struct {
 	db *gorm.DB
 }
 
-func NewRefreshTokenRepository(db *gorm.DB) RefreshRepository {
+func NewRefreshTokenRepository(db *gorm.DB) RefreshTokenRepository {
 	return &refreshTokenRepository{db}
 }
 

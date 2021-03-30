@@ -11,7 +11,7 @@ import (
 	"os"
 )
 
-func LoginUser(ctx context.Context, email, password string) (string, error) {
+func LoginUser(ctx context.Context, email, password string) (map[string]interface{}, error) {
 	url := os.Getenv("SERVICE_USER")
 	data := map[string]interface{}{
 		"email" : email,
@@ -20,7 +20,7 @@ func LoginUser(ctx context.Context, email, password string) (string, error) {
 
 	dataJson, err := json.Marshal(data)
 	if err != nil{
-		return "", errors.New("internal server error")
+		return nil, errors.New("internal server error")
 	}
 
 	payload := bytes.NewBuffer(dataJson)
@@ -28,14 +28,14 @@ func LoginUser(ctx context.Context, email, password string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url + "user/login", payload)
 
 	if err != nil {
-		return "", errors.New("internal server error")
+		return nil, errors.New("internal server error")
 	}
 
 	res, err := client.Do(req)
 
 	if err != nil {
 		fmt.Print(err)
-		return "", errors.New("internal server error")
+		return nil, errors.New("internal server error")
 	}
 
 	defer res.Body.Close()
@@ -43,7 +43,7 @@ func LoginUser(ctx context.Context, email, password string) (string, error) {
 	body, err := ioutil.ReadAll(res.Body)
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	decodeJSON := make(map[string]interface{})
@@ -51,14 +51,14 @@ func LoginUser(ctx context.Context, email, password string) (string, error) {
 	err = json.Unmarshal(body, &decodeJSON)
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if res.StatusCode == 404 {
-		return "", errors.New("user not found")
+		return nil, errors.New("user not found")
 	}
 
 	decodeJSON["status_code"] = res.StatusCode
 
-	return decodeJSON["sub"].(string), nil
+	return decodeJSON, nil
 }
