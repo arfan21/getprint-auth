@@ -20,7 +20,7 @@ func CreateToken(data map[string]interface{}, kid string, exp int64, typeToken s
 	if err != nil {
 		return "", err
 	}
-
+	data = data["data"].(map[string]interface{})
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, models.JwtClaims{Email: data["email"].(string), StandardClaims: jwt.StandardClaims{
 		Audience: AUD,
 		Issuer: ISS,

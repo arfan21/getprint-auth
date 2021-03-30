@@ -3,11 +3,12 @@ package auth
 import (
 	"context"
 	_ "github.com/joho/godotenv/autoload"
+	uuid "github.com/satori/go.uuid"
 	"os"
 	"service-auth/controllers/http/middleware"
 	"service-auth/models"
 	"service-auth/services"
-	"service-auth/services/refreshToken"
+	_refreshTokenSrv "service-auth/services/refreshToken"
 	"strconv"
 	"time"
 )
@@ -17,15 +18,17 @@ type AuthService interface {
 }
 
 type authService struct {
-	refreshTokenSrv refreshToken.RefreshTokenService
+	refreshTokenSrv _refreshTokenSrv.RefreshTokenService
 }
 
-func NewAuthService(refreshTokenSrv refreshToken.RefreshTokenService) AuthService {
+func NewAuthService(refreshTokenSrv _refreshTokenSrv.RefreshTokenService) AuthService {
 	return &authService{refreshTokenSrv}
 }
 
 func (srv authService) Login(email, password string) (map[string]interface{}, error) {
+
 	data, err := services.LoginUser(context.Background(), email, password)
+
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +36,6 @@ func (srv authService) Login(email, password string) (map[string]interface{}, er
 	jwtExp, _ := strconv.ParseInt(os.Getenv("JWT_EXP"), 10, 64)
 	jwtExpUnix := time.Now().Add(time.Minute * time.Duration(jwtExp)).Unix()
 	token, err := middleware.CreateToken(data, "GetprintIDToken", jwtExpUnix, "token")
-
 	if err != nil {
 		return nil, err
 	}
@@ -45,11 +47,11 @@ func (srv authService) Login(email, password string) (map[string]interface{}, er
 	if err != nil {
 		return nil, err
 	}
-
+	uuidString := data["data"].(map[string]interface{})["id"].(string)
 	refreshTokenModel := new(models.RefreshToken)
 	refreshTokenModel.Email = email
 	refreshTokenModel.Token = refreshToken
-	refreshTokenModel.UserID = data["user_id"].(uint)
+	refreshTokenModel.UserID = uuid.FromStringOrNil(uuidString)
 	err = srv.refreshTokenSrv.Create(refreshTokenModel)
 
 	if err != nil {

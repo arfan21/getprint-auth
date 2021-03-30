@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"github.com/satori/go.uuid"
+	"time"
+)
 
 type RefreshToken struct {
 	ID        uint      `gorm:"primary_key" json:"id"`
@@ -8,5 +11,5 @@ type RefreshToken struct {
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 	Token     string    `json:"token"`
 	Email     string    `json:"email"`
-	UserID    uint      `json:"user_id"`
+	UserID    uuid.UUID      `json:"user_id"`
 }

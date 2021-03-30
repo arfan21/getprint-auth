@@ -7,15 +7,17 @@ import (
 	"log"
 	"net/http"
 	"os"
+	_authCtrl "service-auth/controllers/http/auth"
 	"service-auth/services"
 	"service-auth/utils"
 )
 
 func main() {
-	//kid := os.Getenv("RSA_KEY_ID")
-	//clientId := os.Getenv("CLIENT_ID")
-	//clientSecret := os.Getenv("CLIENT_SECRET")
-	//privKey := utils.CreateKey(kid)
+	db, err :=utils.Connect()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8888"
@@ -37,11 +39,13 @@ func main() {
 		return nil
 	})
 	route.Static("/well-knows", "oauth")
+	authCtrl := _authCtrl.NewAuthController(db)
+	authCtrl.Routes(route)
 
-	if err := utils.CreateKey("getprintIDToken", "token"); err != nil{
+	if err := utils.CreateKey("GetprintIDToken", "token"); err != nil{
 		log.Println(err)
 	}
-	if err := utils.CreateKey("getprintIDRefreshToken", "refreshToken"); err != nil{
+	if err := utils.CreateKey("GetprintRefreshToken", "refreshToken"); err != nil{
 		log.Println(err)
 	}
 	route.Logger.Fatal(route.Start(fmt.Sprintf(":%s", port)))

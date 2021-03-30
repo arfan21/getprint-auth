@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -25,8 +24,8 @@ func LoginUser(ctx context.Context, email, password string) (map[string]interfac
 
 	payload := bytes.NewBuffer(dataJson)
 	client := new(http.Client)
-	req, err := http.NewRequestWithContext(ctx, "GET", url + "user/login", payload)
-
+	req, err := http.NewRequestWithContext(ctx, "POST", url + "/login", payload)
+	req.Header.Add("Content-Type","application/json")
 	if err != nil {
 		return nil, errors.New("internal server error")
 	}
@@ -34,7 +33,6 @@ func LoginUser(ctx context.Context, email, password string) (map[string]interfac
 	res, err := client.Do(req)
 
 	if err != nil {
-		fmt.Print(err)
 		return nil, errors.New("internal server error")
 	}
 
@@ -54,11 +52,14 @@ func LoginUser(ctx context.Context, email, password string) (map[string]interfac
 		return nil, err
 	}
 
+	if res.StatusCode == 500 {
+		return nil, errors.New(decodeJSON["message"].(string))
+	}
+
 	if res.StatusCode == 404 {
-		return nil, errors.New("user not found")
+		return nil, errors.New(decodeJSON["message"].(string))
 	}
 
 	decodeJSON["status_code"] = res.StatusCode
-
 	return decodeJSON, nil
 }
