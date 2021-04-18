@@ -1,13 +1,15 @@
 package auth
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
-	"net/http"
-	refreshTokenRepo "service-auth/repository/mysql/refreshToken"
-	"service-auth/services/auth"
-	refreshTokenSrv "service-auth/services/refreshToken"
-	"service-auth/utils"
+
+	refreshTokenRepo "github.com/arfan21/getprint-service-auth/repository/mysql/refreshToken"
+	"github.com/arfan21/getprint-service-auth/services/auth"
+	refreshTokenSrv "github.com/arfan21/getprint-service-auth/services/refreshToken"
+	"github.com/arfan21/getprint-service-auth/utils"
 )
 
 type AuthController interface {

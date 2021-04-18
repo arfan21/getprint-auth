@@ -3,15 +3,19 @@ package refreshToken
 import (
 	"fmt"
 	"os"
-	"service-auth/controllers/http/middleware"
-	"service-auth/models"
-	refreshTokenRepo "service-auth/repository/mysql/refreshToken"
 	"strconv"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
+
+	"github.com/arfan21/getprint-service-auth/controllers/http/middleware"
+	"github.com/arfan21/getprint-service-auth/models"
+	refreshTokenRepo "github.com/arfan21/getprint-service-auth/repository/mysql/refreshToken"
 )
 
 type RefreshTokenService interface {
 	Create(refreshToken *models.RefreshToken) error
+	UpdateTokenByRefreshToken(refreshToken, email string) (map[string]interface{}, error)
 }
 
 type refreshTokenService struct {
@@ -36,18 +40,17 @@ func (srv refreshTokenService) UpdateTokenByRefreshToken(refreshToken, email str
 	if err != nil {
 		return nil, err
 	}
-	claims, ok := oldToken.Claims.(models.JwtClaims)
+	claims, ok := oldToken.Claims.(jwt.MapClaims)
 
 	if !ok || !oldToken.Valid{
 		return nil, fmt.Errorf("Invalid Token")
 	}
-
-	if claims.Email != email {
+	if claims["email"].(string) != email {
 		return nil, fmt.Errorf("Invalid Email")
 	}
 
 	dataForNewToken := map[string]interface{}{
-		"user_id" : data.UserID,
+		"id" : data.UserID.String(),
 		"email" : email,
 	}
 

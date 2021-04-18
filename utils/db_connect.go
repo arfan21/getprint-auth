@@ -2,11 +2,13 @@ package utils
 
 import (
 	"fmt"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 	"log"
 	"os"
-	"service-auth/models"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+
+	"github.com/arfan21/getprint-service-auth/models"
 )
 
 func Connect() (*gorm.DB, error) {

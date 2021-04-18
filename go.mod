@@ -1,4 +1,4 @@
-module service-auth
+module github.com/arfan21/getprint-service-auth
 
 go 1.15
 

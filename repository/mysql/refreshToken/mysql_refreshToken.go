@@ -2,7 +2,8 @@ package refreshToken
 
 import (
 	"gorm.io/gorm"
-	"service-auth/models"
+
+	"github.com/arfan21/getprint-service-auth/models"
 )
 
 type RefreshTokenRepository interface {

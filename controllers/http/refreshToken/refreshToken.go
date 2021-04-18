@@ -1,10 +1,14 @@
 package refreshToken
 
 import (
-	"github.com/go-oauth2/oauth2/v4/server"
-	"github.com/labstack/echo/v4"
 	"net/http"
-	"service-auth/utils"
+
+	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
+
+	refreshTokenRepo "github.com/arfan21/getprint-service-auth/repository/mysql/refreshToken"
+	refreshTokenSrv "github.com/arfan21/getprint-service-auth/services/refreshToken"
+	"github.com/arfan21/getprint-service-auth/utils"
 )
 
 type RefreshTokenControllers interface {
@@ -12,11 +16,13 @@ type RefreshTokenControllers interface {
 }
 
 type refreshTokenControllers struct {
-	srv *server.Server
+	rtSrv refreshTokenSrv.RefreshTokenService
 }
 
-func NewRefreshTokenControllers(srv *server.Server) RefreshTokenControllers {
-	return &refreshTokenControllers{srv: srv}
+func NewRefreshTokenControllers(db *gorm.DB) RefreshTokenControllers {
+	rtRepo := refreshTokenRepo.NewRefreshTokenRepository(db)
+	rtSrv := refreshTokenSrv.NewRefreshTokenService(rtRepo)
+	return &refreshTokenControllers{rtSrv}
 }
 
 func (ctrl refreshTokenControllers) RefreshToken(c echo.Context) error{
@@ -26,5 +32,11 @@ func (ctrl refreshTokenControllers) RefreshToken(c echo.Context) error{
 		return c.JSON(http.StatusBadRequest, utils.Response("error", err.Error, nil))
 	}
 
-	return nil
+	newToken, err := ctrl.rtSrv.UpdateTokenByRefreshToken(data["refresh_token"].(string),data["email"].(string))
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, utils.Response("error", err.Error(), nil))
+	}
+
+	return c.JSON(http.StatusOK, utils.Response("success", nil, newToken))
 }
