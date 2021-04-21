@@ -11,6 +11,7 @@ import (
 	"github.com/arfan21/getprint-service-auth/controllers/http/middleware"
 	"github.com/arfan21/getprint-service-auth/models"
 	refreshTokenRepo "github.com/arfan21/getprint-service-auth/repository/mysql/refreshToken"
+	_userRepo "github.com/arfan21/getprint-service-auth/repository/user"
 )
 
 type RefreshTokenService interface {
@@ -42,16 +43,17 @@ func (srv refreshTokenService) UpdateTokenByRefreshToken(refreshToken, email str
 	}
 	claims, ok := oldToken.Claims.(jwt.MapClaims)
 
-	if !ok || !oldToken.Valid{
+	if !ok || !oldToken.Valid {
 		return nil, fmt.Errorf("Invalid Token")
 	}
 	if claims["email"].(string) != email {
 		return nil, fmt.Errorf("Invalid Email")
 	}
 
-	dataForNewToken := map[string]interface{}{
-		"id" : data.UserID.String(),
-		"email" : email,
+	dataForNewToken := _userRepo.UserLoginResponse{
+		ID:    data.UserID.String(),
+		Email: data.Email,
+		Role:  data.Role,
 	}
 
 	jwtExp, _ := strconv.ParseInt(os.Getenv("JWT_EXP"), 10, 64)
@@ -62,6 +64,6 @@ func (srv refreshTokenService) UpdateTokenByRefreshToken(refreshToken, email str
 	}
 
 	return map[string]interface{}{
-		"token" : newToken,
+		"token": newToken,
 	}, nil
 }

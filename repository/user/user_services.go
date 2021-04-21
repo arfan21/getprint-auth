@@ -11,7 +11,7 @@ import (
 )
 
 type UserRepository interface {
-	Login(email, password string) (map[string]interface{}, error)
+	Login(email, password string) (*UserLoginResponse, error)
 }
 
 type userRepository struct {
@@ -22,7 +22,7 @@ func NewUserRepository(ctx context.Context) UserRepository {
 	return &userRepository{ctx}
 }
 
-func (repo userRepository) Login(email, password string) (map[string]interface{}, error) {
+func (repo userRepository) Login(email, password string) (*UserLoginResponse, error) {
 	url := os.Getenv("SERVICE_USER")
 	data := map[string]interface{}{
 		"email":    email,
@@ -36,14 +36,15 @@ func (repo userRepository) Login(email, password string) (map[string]interface{}
 
 	payload := bytes.NewBuffer(dataJson)
 	client := new(http.Client)
+
 	req, err := http.NewRequestWithContext(repo.ctx, "POST", url+"/login", payload)
-	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+
 	if err != nil {
 		return nil, err
 	}
 
 	res, err := client.Do(req)
-
 	if err != nil {
 		return nil, err
 	}
@@ -56,17 +57,17 @@ func (repo userRepository) Login(email, password string) (map[string]interface{}
 		return nil, err
 	}
 
-	decodedJSON := make(map[string]interface{})
+	resData := new(UserResponse)
 
-	err = json.Unmarshal(body, &decodedJSON)
+	err = json.Unmarshal(body, &resData)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if !(res.StatusCode >= 200 && res.StatusCode < 300) {
-		return nil, errors.New(decodedJSON["message"].(string))
+		return nil, errors.New(resData.Message)
 	}
 
-	return decodedJSON["data"].(map[string]interface{}), nil
+	return &resData.Data, nil
 }
