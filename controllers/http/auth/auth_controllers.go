@@ -37,7 +37,7 @@ func (ctrl authController) Login(c echo.Context) error {
 	dataToken, err := ctrl.authSrv.Login(data["email"].(string), data["password"].(string))
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, utils.Response("error", err.Error(), nil))
+		return c.JSON(utils.GetStatusCode(err), utils.Response("error", err.Error(), nil))
 	}
 
 	return c.JSON(http.StatusOK, utils.Response("success", nil, dataToken))
