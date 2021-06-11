@@ -1,4 +1,9 @@
-> Getprint is a web-based mini project in Telkom University RPLGDC lab
->
+> Getprint is a web-based mini project at Telkom University RPLGDC lab
+
 Previously Getprint used NodeJS. I tried rewriting Getprint using GO programming language
-###[Getprint NodeJS Version](https://github.com/arfan21/getprint)
+
+### [API Documentation API GATEWAY](https://documenter.getpostman.com/view/10131591/TzeTHUXU)
+
+---
+
+### [Getprint NodeJS Version](https://github.com/arfan21/getprint)

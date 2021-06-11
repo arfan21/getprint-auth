@@ -37,7 +37,7 @@ func (srv refreshTokenService) UpdateTokenByRefreshToken(refreshToken, email str
 		return nil, err
 	}
 
-	oldToken, err := middleware.VerifyToken(refreshToken, "refreshToken")
+	oldToken, err := middleware.VerifyToken(data.Token, "refreshToken")
 	if err != nil {
 		return nil, err
 	}

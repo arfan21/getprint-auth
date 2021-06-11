@@ -17,6 +17,9 @@ func GetStatusCode(err error) int {
 	if strings.Contains(err.Error(), "password not match") {
 		return http.StatusBadRequest
 	}
+	if strings.Contains(err.Error(), "expired") {
+		return http.StatusUnauthorized
+	}
 
 	switch err {
 	case models.ErrBadParamInput:
