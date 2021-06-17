@@ -23,7 +23,7 @@ func CreateToken(user _userRepo.UserResoponseData, kid string, exp int64, typeTo
 		return "", err
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, models.JwtClaims{Email: user.Email, Picture: user.Picture, Roles: []string{user.Role}, StandardClaims: jwt.StandardClaims{
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, models.JwtClaims{Name: user.Name, Email: user.Email, Picture: user.Picture, Roles: []string{user.Role}, StandardClaims: jwt.StandardClaims{
 		Audience:  AUD,
 		Issuer:    ISS,
 		ExpiresAt: exp,

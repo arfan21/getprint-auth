@@ -27,9 +27,9 @@ func NewRefreshTokenControllers(db *gorm.DB) RefreshTokenControllers {
 
 func (ctrl refreshTokenControllers) RefreshToken(c echo.Context) error {
 
-	cookie, err := c.Cookie("X-GETPRINT-REFRESH")
+	cookie, err := c.Cookie("getprint-refresh-token")
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, utils.Response("error", err.Error, nil))
+		return c.JSON(http.StatusBadRequest, utils.Response("error", err.Error(), nil))
 	}
 
 	newToken, err := ctrl.rtSrv.UpdateTokenByRefreshToken(cookie.Value)
@@ -38,13 +38,14 @@ func (ctrl refreshTokenControllers) RefreshToken(c echo.Context) error {
 		return c.JSON(utils.GetStatusCode(err), utils.Response("error", utils.CustomErrors(err), nil))
 	}
 	cookieToken := new(http.Cookie)
-	cookieToken.Name = "X-GETPRINT-KEY"
+	cookieToken.Name = "getprint-jwt"
 	cookieToken.Value = newToken["token"].(string)
-	cookieToken.MaxAge = 1
+	cookieToken.MaxAge = 0
 	cookieToken.HttpOnly = true
 	cookieToken.Secure = true
 	cookieToken.Domain = "*.localhost"
 	cookieToken.Path = "/"
+	c.SetCookie(cookieToken)
 
 	return c.JSON(http.StatusOK, utils.Response("success", nil, nil))
 }
