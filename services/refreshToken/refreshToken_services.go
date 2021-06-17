@@ -1,6 +1,7 @@
 package refreshToken
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -16,7 +17,7 @@ import (
 
 type RefreshTokenService interface {
 	Create(refreshToken *models.RefreshToken) error
-	UpdateTokenByRefreshToken(refreshToken, email string) (map[string]interface{}, error)
+	UpdateTokenByRefreshToken(refreshToken string) (map[string]interface{}, error)
 }
 
 type refreshTokenService struct {
@@ -31,10 +32,10 @@ func (srv refreshTokenService) Create(refreshToken *models.RefreshToken) error {
 	return srv.repo.Create(refreshToken)
 }
 
-func (srv refreshTokenService) UpdateTokenByRefreshToken(refreshToken, email string) (map[string]interface{}, error) {
+func (srv refreshTokenService) UpdateTokenByRefreshToken(refreshToken string) (map[string]interface{}, error) {
 	data, err := srv.repo.GetByToken(refreshToken)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Invalid Token")
 	}
 
 	oldToken, err := middleware.VerifyToken(data.Token, "refreshToken")
@@ -46,19 +47,19 @@ func (srv refreshTokenService) UpdateTokenByRefreshToken(refreshToken, email str
 	if !ok || !oldToken.Valid {
 		return nil, fmt.Errorf("Invalid Token")
 	}
-	if claims["email"].(string) != email {
-		return nil, fmt.Errorf("Invalid Email")
+
+	claimsJson, err := json.Marshal(claims)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid Token")
 	}
 
-	dataForNewToken := _userRepo.UserLoginResponse{
-		ID:    data.UserID.String(),
-		Email: data.Email,
-		Role:  data.Role,
-	}
+	userResponse := new(_userRepo.UserResoponseData)
+
+	json.Unmarshal(claimsJson, userResponse)
 
 	jwtExp, _ := strconv.ParseInt(os.Getenv("JWT_EXP"), 10, 64)
 	jwtExpUnix := time.Now().Add(time.Minute * time.Duration(jwtExp)).Unix()
-	newToken, err := middleware.CreateToken(dataForNewToken, "GetprintIDToken", jwtExpUnix, "token")
+	newToken, err := middleware.CreateToken(*userResponse, "GetprintIDToken", jwtExpUnix, "token")
 	if err != nil {
 		return nil, err
 	}

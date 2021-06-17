@@ -41,5 +41,24 @@ func (ctrl authController) Login(c echo.Context) error {
 		return c.JSON(utils.GetStatusCode(err), utils.Response("error", err.Error(), nil))
 	}
 
+	cookieToken := new(http.Cookie)
+	cookieToken.Name = "X-GETPRINT-KEY"
+	cookieToken.Value = dataToken["token"].(string)
+	cookieToken.MaxAge = 1
+	cookieToken.HttpOnly = true
+	cookieToken.Secure = true
+	cookieToken.Domain = "*.localhost"
+	cookieToken.Path = "/"
+	c.SetCookie(cookieToken)
+	cookieRefreshToken := new(http.Cookie)
+	cookieRefreshToken.Name = "X-GETPRINT-REFRESH"
+	cookieRefreshToken.Value = dataToken["refresh_token"].(string)
+	cookieRefreshToken.MaxAge = 1
+	cookieRefreshToken.HttpOnly = true
+	cookieRefreshToken.Secure = true
+	cookieRefreshToken.Domain = "*.localhost"
+	cookieRefreshToken.Path = "/"
+	c.SetCookie(cookieRefreshToken)
+
 	return c.JSON(http.StatusOK, utils.Response("success", nil, dataToken))
 }

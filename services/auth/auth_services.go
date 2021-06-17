@@ -2,12 +2,14 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	_ "github.com/joho/godotenv/autoload"
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/arfan21/getprint-service-auth/controllers/http/middleware"
 	"github.com/arfan21/getprint-service-auth/models"
@@ -17,6 +19,7 @@ import (
 
 type AuthService interface {
 	Login(email, password string) (map[string]interface{}, error)
+	VerifyToken(token string) (*models.JwtClaims, error)
 }
 
 type authService struct {
@@ -54,9 +57,6 @@ func (srv authService) Login(email, password string) (map[string]interface{}, er
 
 	refreshTokenModel := new(models.RefreshToken)
 	refreshTokenModel.Token = refreshToken
-	refreshTokenModel.Email = data.Email
-	refreshTokenModel.UserID = uuid.FromStringOrNil(data.ID)
-	refreshTokenModel.Role = data.Role
 
 	err = srv.refreshTokenSrv.Create(refreshTokenModel)
 
@@ -68,4 +68,28 @@ func (srv authService) Login(email, password string) (map[string]interface{}, er
 		"token":         token,
 		"refresh_token": refreshToken,
 	}, nil
+}
+
+func (srv authService) VerifyToken(token string) (*models.JwtClaims, error) {
+	verifiedToken, err := middleware.VerifyToken(token, "token")
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := verifiedToken.Claims.(jwt.MapClaims)
+
+	if !ok || !verifiedToken.Valid {
+		return nil, fmt.Errorf("Invalid Token")
+	}
+
+	claimsJson, err := json.Marshal(claims)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid Token")
+	}
+
+	claimsStruct := new(models.JwtClaims)
+
+	json.Unmarshal(claimsJson, claimsStruct)
+
+	return claimsStruct, nil
 }

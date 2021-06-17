@@ -11,7 +11,7 @@ import (
 )
 
 type UserRepository interface {
-	Login(email, password string) (*UserLoginResponse, error)
+	Login(email, password string) (*UserResoponseData, error)
 }
 
 type userRepository struct {
@@ -22,7 +22,7 @@ func NewUserRepository(ctx context.Context) UserRepository {
 	return &userRepository{ctx}
 }
 
-func (repo userRepository) Login(email, password string) (*UserLoginResponse, error) {
+func (repo userRepository) Login(email, password string) (*UserResoponseData, error) {
 	url := os.Getenv("SERVICE_USER")
 	data := map[string]interface{}{
 		"email":    email,
