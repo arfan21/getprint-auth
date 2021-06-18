@@ -8,10 +8,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+
+	"github.com/arfan21/getprint-service-auth/repository/line"
 )
 
 type UserRepository interface {
 	Login(email, password string) (*UserResoponseData, error)
+	LoginLine(dataLine line.LineVerifyIdTokenResponse) (*UserResoponseData, error)
 }
 
 type userRepository struct {
@@ -38,6 +41,52 @@ func (repo userRepository) Login(email, password string) (*UserResoponseData, er
 	client := new(http.Client)
 
 	req, err := http.NewRequestWithContext(repo.ctx, "POST", url+"/login", payload)
+	req.Header.Set("Content-Type", "application/json")
+
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	resData := new(UserResponse)
+
+	err = json.Unmarshal(body, &resData)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !(res.StatusCode >= 200 && res.StatusCode < 300) {
+		return nil, errors.New(resData.Message)
+	}
+
+	return &resData.Data, nil
+}
+
+func (repo userRepository) LoginLine(dataLine line.LineVerifyIdTokenResponse) (*UserResoponseData, error) {
+	url := os.Getenv("SERVICE_USER")
+
+	dataJson, err := json.Marshal(dataLine)
+	if err != nil {
+		return nil, err
+	}
+
+	payload := bytes.NewBuffer(dataJson)
+	client := new(http.Client)
+
+	req, err := http.NewRequestWithContext(repo.ctx, "POST", url+"/login-line", payload)
 	req.Header.Set("Content-Type", "application/json")
 
 	if err != nil {

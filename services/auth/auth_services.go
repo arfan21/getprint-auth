@@ -20,6 +20,7 @@ import (
 type AuthService interface {
 	Login(email, password string) (map[string]interface{}, error)
 	VerifyToken(token string) (*models.JwtClaims, error)
+	Auth(data _userRepo.UserResoponseData) (map[string]interface{}, error)
 }
 
 type authService struct {
@@ -33,23 +34,30 @@ func NewAuthService(refreshTokenSrv _refreshTokenSrv.RefreshTokenService) AuthSe
 }
 
 func (srv authService) Login(email, password string) (map[string]interface{}, error) {
-	kidToken := os.Getenv("JWT_KID")
-	kidRefreshToken := os.Getenv("REFRESH_TOKEN_KID")
+
 	data, err := srv.userRepo.Login(email, password)
 	if err != nil {
 		return nil, err
 	}
 
+	return srv.Auth(*data)
+
+}
+
+func (srv authService) Auth(data _userRepo.UserResoponseData) (map[string]interface{}, error) {
+	kidToken := os.Getenv("JWT_KID")
+	kidRefreshToken := os.Getenv("REFRESH_TOKEN_KID")
+
 	jwtExp, _ := strconv.ParseInt(os.Getenv("JWT_EXP"), 10, 64)
 	jwtExpUnix := time.Now().Add(time.Minute * time.Duration(jwtExp)).Unix()
-	token, err := middleware.CreateToken(*data, kidToken, jwtExpUnix, "token")
+	token, err := middleware.CreateToken(data, kidToken, jwtExpUnix, "token")
 	if err != nil {
 		return nil, err
 	}
 
 	refreshTokenExp, _ := strconv.ParseInt(os.Getenv("REFRESH_TOKEN_EXP"), 10, 64)
 	refreshTokenExpUnix := time.Now().Add(time.Minute * time.Duration(refreshTokenExp)).Unix()
-	refreshToken, err := middleware.CreateToken(*data, kidRefreshToken, refreshTokenExpUnix, "refreshToken")
+	refreshToken, err := middleware.CreateToken(data, kidRefreshToken, refreshTokenExpUnix, "refreshToken")
 
 	if err != nil {
 		return nil, err

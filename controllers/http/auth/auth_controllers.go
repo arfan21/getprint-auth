@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -9,6 +8,7 @@ import (
 
 	refreshTokenRepo "github.com/arfan21/getprint-service-auth/repository/mysql/refreshToken"
 	"github.com/arfan21/getprint-service-auth/services/auth"
+	"github.com/arfan21/getprint-service-auth/services/line"
 	refreshTokenSrv "github.com/arfan21/getprint-service-auth/services/refreshToken"
 	"github.com/arfan21/getprint-service-auth/utils"
 )
@@ -20,13 +20,15 @@ type AuthController interface {
 
 type authController struct {
 	authSrv auth.AuthService
+	lineSrv line.LineService
 }
 
 func NewAuthController(db *gorm.DB) AuthController {
 	rtRepo := refreshTokenRepo.NewRefreshTokenRepository(db)
 	rtSrv := refreshTokenSrv.NewRefreshTokenService(rtRepo)
 	authSrv := auth.NewAuthService(rtSrv)
-	return &authController{authSrv}
+	lineSrv := line.NewLineService(authSrv)
+	return &authController{authSrv, lineSrv}
 }
 
 func (ctrl authController) Login(c echo.Context) error {
@@ -35,8 +37,6 @@ func (ctrl authController) Login(c echo.Context) error {
 	if err := c.Bind(&data); err != nil {
 		return c.JSON(http.StatusBadRequest, utils.Response("error", err.Error(), nil))
 	}
-
-	fmt.Println("data user :", data)
 
 	dataToken, err := ctrl.authSrv.Login(data["email"].(string), data["password"].(string))
 
@@ -50,7 +50,6 @@ func (ctrl authController) Login(c echo.Context) error {
 	cookieToken.MaxAge = 0
 	cookieToken.HttpOnly = true
 	cookieToken.Secure = true
-	cookieToken.Domain = "localhost"
 	cookieToken.Path = "/"
 	c.SetCookie(cookieToken)
 	cookieRefreshToken := new(http.Cookie)
@@ -59,7 +58,41 @@ func (ctrl authController) Login(c echo.Context) error {
 	cookieRefreshToken.MaxAge = 0
 	cookieRefreshToken.HttpOnly = true
 	cookieRefreshToken.Secure = true
-	cookieRefreshToken.Domain = "localhost"
+	cookieRefreshToken.Path = "/"
+	c.SetCookie(cookieRefreshToken)
+
+	return c.JSON(http.StatusOK, utils.Response("success", nil, nil))
+}
+
+func (ctrl authController) CallbackLine(c echo.Context) error {
+	data := make(map[string]interface{})
+
+	if err := c.Bind(&data); err != nil {
+		return c.JSON(http.StatusBadRequest, utils.Response("error", err.Error(), nil))
+	}
+
+	dataToken, err := ctrl.lineSrv.CallbackHandler(data["id_token"].(string))
+
+	if err != nil {
+		return c.JSON(utils.GetStatusCode(err), utils.Response("error", err.Error(), nil))
+	}
+
+	cookieToken := new(http.Cookie)
+	cookieToken.Name = "getprint-jwt"
+	cookieToken.Value = dataToken["token"].(string)
+	cookieToken.MaxAge = 0
+	cookieToken.HttpOnly = true
+	cookieToken.Secure = true
+
+	cookieToken.Path = "/"
+	c.SetCookie(cookieToken)
+	cookieRefreshToken := new(http.Cookie)
+	cookieRefreshToken.Name = "getprint-refresh-token"
+	cookieRefreshToken.Value = dataToken["refresh_token"].(string)
+	cookieRefreshToken.MaxAge = 0
+	cookieRefreshToken.HttpOnly = true
+	cookieRefreshToken.Secure = true
+
 	cookieRefreshToken.Path = "/"
 	c.SetCookie(cookieRefreshToken)
 
@@ -94,7 +127,7 @@ func (ctrl authController) Logout(c echo.Context) error {
 	cookieToken.MaxAge = -1
 	cookieToken.HttpOnly = true
 	cookieToken.Secure = true
-	cookieToken.Domain = "localhost"
+
 	cookieToken.Path = "/"
 	c.SetCookie(cookieToken)
 	cookieRefreshToken := new(http.Cookie)
@@ -103,7 +136,7 @@ func (ctrl authController) Logout(c echo.Context) error {
 	cookieRefreshToken.MaxAge = -1
 	cookieRefreshToken.HttpOnly = true
 	cookieRefreshToken.Secure = true
-	cookieRefreshToken.Domain = "localhost"
+
 	cookieRefreshToken.Path = "/"
 	c.SetCookie(cookieRefreshToken)
 

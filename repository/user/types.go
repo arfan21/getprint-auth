@@ -23,5 +23,6 @@ type UserResoponseData struct {
 	Address       string    `json:"address"`
 	Role          string    `json:"role"`
 	Provider      string    `json:"provider"`
+	ProviderID    string    `json:"provider_id"`
 	LastLogin     time.Time `json:"last_login"`
 }
