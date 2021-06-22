@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/arfan21/getprint-service-auth/app/helpers"
 	"github.com/arfan21/getprint-service-auth/app/services"
@@ -37,24 +38,12 @@ func (ctrl authController) Login(c echo.Context) error {
 		return c.JSON(helpers.GetStatusCode(err), helpers.Response("error", err.Error(), nil))
 	}
 
-	cookieToken := new(http.Cookie)
-	cookieToken.Name = "getprint-jwt"
-	cookieToken.Value = dataToken["token"].(string)
-	cookieToken.MaxAge = 0
-	cookieToken.HttpOnly = true
-	cookieToken.Secure = true
-	cookieToken.Path = "/"
-	c.SetCookie(cookieToken)
-	cookieRefreshToken := new(http.Cookie)
-	cookieRefreshToken.Name = "getprint-refresh-token"
-	cookieRefreshToken.Value = dataToken["refresh_token"].(string)
-	cookieRefreshToken.MaxAge = 0
-	cookieRefreshToken.HttpOnly = true
-	cookieRefreshToken.Secure = true
-	cookieRefreshToken.Path = "/"
+	cookieRefreshToken := helpers.NewRefreshTokenCookie(dataToken["refresh_token"].(string))
 	c.SetCookie(cookieRefreshToken)
 
-	return c.JSON(http.StatusOK, helpers.Response("success", nil, nil))
+	return c.JSON(http.StatusOK, helpers.Response("success", nil, map[string]interface{}{
+		"token": dataToken["token"].(string),
+	}))
 }
 
 func (ctrl authController) CallbackLine(c echo.Context) error {
@@ -70,36 +59,23 @@ func (ctrl authController) CallbackLine(c echo.Context) error {
 		return c.JSON(helpers.GetStatusCode(err), helpers.Response("error", err.Error(), nil))
 	}
 
-	cookieToken := new(http.Cookie)
-	cookieToken.Name = "getprint-jwt"
-	cookieToken.Value = dataToken["token"].(string)
-	cookieToken.MaxAge = 0
-	cookieToken.HttpOnly = true
-	cookieToken.Secure = true
-
-	cookieToken.Path = "/"
-	c.SetCookie(cookieToken)
-	cookieRefreshToken := new(http.Cookie)
-	cookieRefreshToken.Name = "getprint-refresh-token"
-	cookieRefreshToken.Value = dataToken["refresh_token"].(string)
-	cookieRefreshToken.MaxAge = 0
-	cookieRefreshToken.HttpOnly = true
-	cookieRefreshToken.Secure = true
-
-	cookieRefreshToken.Path = "/"
+	cookieRefreshToken := helpers.NewRefreshTokenCookie(dataToken["refresh_token"].(string))
 	c.SetCookie(cookieRefreshToken)
 
-	return c.JSON(http.StatusOK, helpers.Response("success", nil, nil))
+	return c.JSON(http.StatusOK, helpers.Response("success", nil, map[string]interface{}{
+		"token": dataToken["token"].(string),
+	}))
 }
 
 func (ctrl authController) VerifyToken(c echo.Context) error {
-	cookie, err := c.Cookie("getprint-jwt")
-
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, helpers.Response("error", err.Error(), nil))
+	authorizationHeader := c.Request().Header.Get("Authorization")
+	if authorizationHeader == "" {
+		return c.JSON(http.StatusUnauthorized, helpers.Response("error", "unauthorized", nil))
 	}
 
-	data, err := ctrl.authSrv.VerifyToken(cookie.Value)
+	token := strings.Split(authorizationHeader, "Bearer ")[1]
+
+	data, err := ctrl.authSrv.VerifyToken(token)
 
 	if err != nil {
 		return c.JSON(helpers.GetStatusCode(err), helpers.Response("error", err.Error(), nil))
@@ -108,29 +84,7 @@ func (ctrl authController) VerifyToken(c echo.Context) error {
 }
 
 func (ctrl authController) Logout(c echo.Context) error {
-	_, err := c.Cookie("getprint-jwt")
-
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, helpers.Response("error", err.Error(), nil))
-	}
-
-	cookieToken := new(http.Cookie)
-	cookieToken.Name = "getprint-jwt"
-	cookieToken.Value = ""
-	cookieToken.MaxAge = -1
-	cookieToken.HttpOnly = true
-	cookieToken.Secure = true
-
-	cookieToken.Path = "/"
-	c.SetCookie(cookieToken)
-	cookieRefreshToken := new(http.Cookie)
-	cookieRefreshToken.Name = "getprint-refresh-token"
-	cookieRefreshToken.Value = ""
-	cookieRefreshToken.MaxAge = -1
-	cookieRefreshToken.HttpOnly = true
-	cookieRefreshToken.Secure = true
-
-	cookieRefreshToken.Path = "/"
+	cookieRefreshToken := helpers.RemoveRefreshTokenCookie()
 	c.SetCookie(cookieRefreshToken)
 
 	return c.JSON(http.StatusOK, helpers.Response("success", nil, nil))
